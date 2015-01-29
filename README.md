@@ -6,3 +6,4 @@ DREAMT consists of baseline components for homework assignments in the
 [University of Edinburgh machine translation class](http://www.inf.ed.ac.uk/teaching/courses/mt/).
 
 1. The ALIGNER takes parallel texts and produces word alignments.
+2. The DECODER takes French sentences and a translation model, and produces English sentences.
