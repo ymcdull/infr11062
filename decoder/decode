@@ -24,61 +24,170 @@ for word in set(sum(french,())):
     tm[(word,)] = [models.phrase(word, 0.0)]
 
 sys.stderr.write("Decoding %s...\n" % (opts.input,))
+d=5
 
+# for f in french:
+#   hypothesis = namedtuple("hypothesis", "logprob, lm_state, predecessor, phrase, leftmost_position, following_d_bit")
+#   initial_hypothesis = hypothesis(0.0, lm.begin(), None, None, 0 , '0'*d)
+#   stacks = [{} for _ in f] + [{}]
+#   stacks[0][lm.begin()] = initial_hypothesis
+#   for i, stack in enumerate(stacks[:-1]):
+#     for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
+#       lp = h.leftmost_position
+#       # print lp
+#       # minvalue = min(lp+d+1,len(f)+1)
+#       # minvalue = lp + d + 1
+#       for j in xrange(lp, lp+d+1):
+#         for k in xrange(lp+1,lp+d+2):
+#           print h.following_d_bit[j-lp:k-lp]
+#           if '1' not in h.following_d_bit[j-lp:k-lp] and f[j:k] in tm:
+#             # print " ".join(f[j:k])
+#             for phrase in tm[f[j:k]]:
+#               # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+#               logprob = h.logprob + phrase.logprob
+#               lm_state = h.lm_state
+#               for word in phrase.english.split():
+#                 (lm_state, word_logprob) = lm.score(lm_state, word)
+#                 logprob += word_logprob
+#               logprob += lm.end(lm_state) if k == len(f) else 0.0
+#               if not j == lp:
+#                 new_lp = lp
+#                 new_following_d_bit = h.following_d_bit[:j-lp-1] + '1'*(k-j) + h.following_d_bit[k-lp-1:]
+#               else:
+#                 if '0' not in h.following_d_bit[k-lp-1:]:
+#                   new_lp = lp + d + 1
+#                   new_following_d_bit = '00000'
+#                 else:
+#                   new_lp = h.following_d_bit[k-lp-1:].index('0') + k
+#                   new_following_d_bit = h.following_d_bit[k-lp:] + '0'*(k-lp)
+
+#               # if j == lp:
+#               #   new_lp = k
+#               #   new_following_d_bit = h.following_d_bit[k-lp:] + '0'*(k-lp)
+#               # else:
+#               #   new_lp = lp
+#               #   new_following_d_bit = h.following_d_bit[:j-lp-1] + '1'*(k-j) + h.following_d_bit[k-lp-1:]
+
+#               # print '&&&&&&', new_following_d_bit," ".join(lm_state)
+#               new_hypothesis = hypothesis(logprob, lm_state, h, phrase, new_lp, new_following_d_bit)
+#               # print k
+#               if lm_state not in stacks[k] or stacks[k][lm_state].logprob < logprob: # second case is recombination
+#                 stacks[k][lm_state] = new_hypothesis
+
+
+
+
+
+  # for aa in stacks[8].itervalues():
+  #   print aa
 
 
 for f in french:
-  # The following code implements a monotone decoding
-  # algorithm (one that doesn't permute the target phrases).
-  # Hence all hypotheses in stacks[i] represent translations of 
-  # the first i words of the input sentence. You should generalize
-  # this so that the decoder can consider swapping adjacent phrases.
-  hypothesis = namedtuple("hypothesis", "logprob, lm_state, predecessor, phrase, successor")
-  initial_hypothesis = hypothesis(0.0, lm.begin(), None, None, None)
+  hypothesis = namedtuple("hypothesis", "logprob, lm_state, predecessor, phrase, leftmost_position, following_d_bit")
+  initial_hypothesis = hypothesis(0.0, lm.begin(), None, None, 0 , '0'*d)
   stacks = [{} for _ in f] + [{}]
-  stacks[0][lm.begin()] = initial_hypothesis
+  # stacks[0][lm.begin()] = initial_hypothesis
+  stacks[0]['00000'] = initial_hypothesis
   for i, stack in enumerate(stacks[:-1]):
-    for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
-      for j in xrange(i+1,len(f)+1):
-        if f[i:j] in tm:
+    for a in range(1,6):
+      for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
+        lp = h.leftmost_position
+        # print lp
+        # minvalue = min(lp+d+1,len(f)+1)
+        # minvalue = lp + d + 1
+        for j in xrange(0,d):
+          for k in xrange(1,d+1):
+            # print h.following_d_bit[j-lp:k-lp]
+            if '1' not in h.following_d_bit[j:k] and f[lp+j:lp+k] in tm:
+              # print " ".join(f[j:k])
+              for phrase in tm[f[lp+j:lp+k]]:
+                # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+                logprob = h.logprob + phrase.logprob
+                lm_state = h.lm_state
+                for word in phrase.english.split():
+                  (lm_state, word_logprob) = lm.score(lm_state, word)
+                  logprob += word_logprob
+                # logprob += lm.end(lm_state) if lp + k == len(f) else 0.0
+                if not j == 0:
+                  new_lp = lp
+                  new_following_d_bit = h.following_d_bit[:j] + '1'*(k-j) + h.following_d_bit[k:]
+                else:
+                  if '0' not in h.following_d_bit[k:]:
+                    new_lp = lp + d
+                    new_following_d_bit = '00000'
+                  else:
+                    new_lp = lp + h.following_d_bit[k:].index('0') + k
+                    new_following_d_bit = h.following_d_bit[k:] + '0'*(k)
+                if new_lp >= len(f):
+                  logprob += lm.end(lm_state)
+                # if j == lp:
+                #   new_lp = k
+                #   new_following_d_bit = h.following_d_bit[k-lp:] + '0'*(k-lp)
+                # else:
+                #   new_lp = lp
+                #   new_following_d_bit = h.following_d_bit[:j-lp-1] + '1'*(k-j) + h.following_d_bit[k-lp-1:]
 
-          if h.successor == None:
-            for phrase in tm[f[i:j]]:
-              # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
-              logprob = h.logprob + phrase.logprob
-              lm_state = h.lm_state
-              for word in phrase.english.split():
-                (lm_state, word_logprob) = lm.score(lm_state, word)
-                logprob += word_logprob
-              logprob += lm.end(lm_state) if j == len(f) else 0.0
-              new_hypothesis = hypothesis(logprob, lm_state, h, phrase, None)
-              if lm_state not in stacks[j] or stacks[j][lm_state].logprob < logprob: # second case is recombination
-                stacks[j][lm_state] = new_hypothesis
+                # print '&&&&&&', new_following_d_bit," ".join(lm_state)
+                new_hypothesis = hypothesis(logprob, lm_state, h, phrase, new_lp, new_following_d_bit)
+                # if lm_state not in stacks[lp+k] or stacks[lp+k][lm_state].logprob < logprob: # second case is recombination
+                #   stacks[lp+k][lm_state] = new_hypothesis
+                if new_lp < len(f) + 1 :
+                  if new_following_d_bit not in stacks[new_lp] or stacks[new_lp][new_following_d_bit].logprob < logprob: # second case is recombination
+                    stacks[new_lp][new_following_d_bit] = new_hypothesis
 
-            for k in xrange(j+1,len(f)+1):
-              if f[j:k] in tm:
-                for phrase in tm[f[j:k]]:
-                  logprob = h.logprob + phrase.logprob
-                  lm_state = h.lm_state
-                  for word in phrase.english.split():
-                    (lm_state, word_logprob) = lm.score(lm_state, word)
-                    logprob += word_logprob
-                  logprob += lm.end(lm_state) if k == len(f) else 0.0
-                  new_hypothesis = hypothesis(logprob, lm_state, h, phrase, (i,j,k))
-                  if lm_state not in stacks[i+k-j] or stacks[i+k-j][lm_state].logprob < logprob: # second case is recombination
-                    stacks[i+k-j][lm_state] = new_hypothesis
-          else:
-            (ii,jj,kk) = h.successor
-            for phrase in tm[f[ii:jj]]:
-              logprob = h.logprob + phrase.logprob
-              lm_state = h.lm_state
-              for word in phrase.english.split():
-                (lm_state, word_logprob) = lm.score(lm_state, word)
-                logprob += word_logprob
-              logprob += lm.end(lm_state) if kk == len(f) else 0.0
-              new_hypothesis = hypothesis(logprob, lm_state, h, phrase, None)
-              if lm_state not in stacks[k] or stacks[k][lm_state].logprob < logprob: # second case is recombination
-                stacks[k][lm_state] = new_hypothesis            
+
+# for f in french:
+#   # The following code implements a monotone decoding
+#   # algorithm (one that doesn't permute the target phrases).
+#   # Hence all hypotheses in stacks[i] represent translations of 
+#   # the first i words of the input sentence. You should generalize
+#   # this so that the decoder can consider swapping adjacent phrases.
+#   hypothesis = namedtuple("hypothesis", "logprob, lm_state, predecessor, phrase, successor")
+#   initial_hypothesis = hypothesis(0.0, lm.begin(), None, None, None)
+#   stacks = [{} for _ in f] + [{}]
+#   stacks[0][lm.begin()] = initial_hypothesis
+#   for i, stack in enumerate(stacks[:-1]):
+#     for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
+#       for j in xrange(i+1,len(f)+1):
+#         if f[i:j] in tm:
+
+#           if h.successor == None:
+#             for phrase in tm[f[i:j]]:
+#               # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+#               logprob = h.logprob + phrase.logprob
+#               lm_state = h.lm_state
+#               for word in phrase.english.split():
+#                 (lm_state, word_logprob) = lm.score(lm_state, word)
+#                 logprob += word_logprob
+#               logprob += lm.end(lm_state) if j == len(f) else 0.0
+#               new_hypothesis = hypothesis(logprob, lm_state, h, phrase, None)
+#               if lm_state not in stacks[j] or stacks[j][lm_state].logprob < logprob: # second case is recombination
+#                 stacks[j][lm_state] = new_hypothesis
+
+#             for k in xrange(j+1,len(f)+1):
+#               if f[j:k] in tm:
+#                 for phrase in tm[f[j:k]]:
+#                   logprob = h.logprob + phrase.logprob
+#                   lm_state = h.lm_state
+#                   for word in phrase.english.split():
+#                     (lm_state, word_logprob) = lm.score(lm_state, word)
+#                     logprob += word_logprob
+#                   logprob += lm.end(lm_state) if k == len(f) else 0.0
+#                   new_hypothesis = hypothesis(logprob, lm_state, h, phrase, (i,j,k))
+#                   if lm_state not in stacks[i+k-j] or stacks[i+k-j][lm_state].logprob < logprob: # second case is recombination
+#                     stacks[i+k-j][lm_state] = new_hypothesis
+#           else:
+#             (ii,jj,kk) = h.successor
+#             for phrase in tm[f[ii:jj]]:
+#               logprob = h.logprob + phrase.logprob
+#               lm_state = h.lm_state
+#               for word in phrase.english.split():
+#                 (lm_state, word_logprob) = lm.score(lm_state, word)
+#                 logprob += word_logprob
+#               logprob += lm.end(lm_state) if kk == len(f) else 0.0
+#               new_hypothesis = hypothesis(logprob, lm_state, h, phrase, None)
+#               if lm_state not in stacks[kk] or stacks[kk][lm_state].logprob < logprob: # second case is recombination
+#                 stacks[kk][lm_state] = new_hypothesis            
 
 
 
@@ -98,7 +207,7 @@ for f in french:
 #       for j in xrange(i+1,len(f)+1):
 #         if f[i:j] in tm:
 #           for phrase in tm[f[i:j]]:
-#             sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+#             # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
 #             logprob = h.logprob + phrase.logprob
 #             lm_state = h.lm_state
 #             for word in phrase.english.split():
@@ -108,10 +217,17 @@ for f in french:
 #             new_hypothesis = hypothesis(logprob, lm_state, h, phrase)
 #             if lm_state not in stacks[j] or stacks[j][lm_state].logprob < logprob: # second case is recombination
 #               stacks[j][lm_state] = new_hypothesis 
+
+
+
   winner = max(stacks[-1].itervalues(), key=lambda h: h.logprob)
   def extract_english(h): 
     return "" if h.predecessor is None else "%s%s " % (extract_english(h.predecessor), h.phrase.english)
   print extract_english(winner)
+  # for aa in range(-5,0):
+  #   for aaa in stacks[aa].itervalues():
+  #     print extract_english(aaa)
+  #   # print aaa
 
   if opts.verbose:
     def extract_tm_logprob(h):
@@ -119,3 +235,111 @@ for f in french:
     tm_logprob = extract_tm_logprob(winner)
     sys.stderr.write("LM = %f, TM = %f, Total = %f\n" % 
       (winner.logprob - tm_logprob, tm_logprob, winner.logprob))
+
+
+
+
+#   d=5
+#   hypothesis = namedtuple("hypothesis", "logprob, lm_state, predecessor, phrase, leftmost_position, following_d_bit")
+#   initial_hypothesis = hypothesis(0.0, lm.begin(), None, None, None, 0 , '0'*d)
+#   stacks = [{} for _ in f] + [{}]
+#   stacks[0][lm.begin()] = initial_hypothesis
+#   for i, stack in enumerate(stacks[:-1]):
+#     for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
+#       lp = h.leftmost_position
+#       for j in xrange(lp, min(lp+d+1,len(f)+1)):
+#         for k in xrange(lp+1,min(lp+d+1,len(f)+1)):
+#           if '1' not in f[j:k] and f[j:k] in tm:
+#             for phrase in tm[f[j:k]]:
+#               # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+#               logprob = h.logprob + phrase.logprob
+#               lm_state = h.lm_state
+#               for word in phrase.english.split():
+#                 (lm_state, word_logprob) = lm.score(lm_state, word)
+#                 logprob += word_logprob
+#               logprob += lm.end(lm_state) if k == len(f) else 0.0
+#               if j == lp:
+#                 new_lp = k
+#                 new_following_d_bit = h.following_d_bit[k-lp:] + '0'*(k-lp)
+#               else:
+#                 new_lp = lp
+#                 new_following_d_bit = h.following_d_bit[:j-lp-1] + '1'*(k-j) + h.following_d_bit[k-lp-1:]
+
+#               new_hypothesis = hypothesis(logprob, lm_state, h, phrase, new_lp, new_following_d_bit)
+#               if lm_state not in stacks[k] or stacks[k][lm_state].logprob < logprob: # second case is recombination
+#                 stacks[k][lm_state] = new_hypothesis
+
+# if not j == lp:
+#   new_lp = lp
+#   new_following_d_bit = h.following_d_bit[:j-lp-1] + '1'*(k-j) + h.following_d_bit[k-lp-1:]
+# else:
+#   if '0' not in h.following_d_bit[k-lp-1:]:
+#     new_lp = lp + d + 1
+#     new_following_d_bit = '00000'
+#   else:
+#     new_lp = h.following_d_bit[k-lp-1:].index('0') + k
+#     new_following_d_bit = h.following_d_bit[k-lp:] + '0'*(k-lp)
+# 0 0 0 1 1 0
+# 1 1 0 1 1 0
+
+# lp = 0
+# j = 0
+# k = 2
+
+
+# 0 0 0 1 1 0 0
+# 1 1 0 1 1 0
+# lp = 3
+# d = 5
+# k = 4
+# l = 5
+
+# len = 7
+# k = 2
+# if len - k <= 5:
+#   rest_0 = len - 5 - k + 1
+# else:
+#   rest_0 = 
+# lp + 6, len+1
+
+
+
+#       for j in xrange(lp+1,min(lp+d+1,len(f)+1)):
+#         for k in xrange(lp,j):
+#           for l in xrange(k+1,j):
+#             if '1' not in f[k:l] and f[k:l] in tm:
+#               for phrase in tm[f[k:l]]:
+#                 # sys.stderr.write("%s ||| %s ||| %f\n" % (" ".join(f[i:j]), phrase.english, phrase.logprob))
+#                 logprob = h.logprob + phrase.logprob
+#                 lm_state = h.lm_state
+#                 for word in phrase.english.split():
+#                   (lm_state, word_logprob) = lm.score(lm_state, word)
+#                   logprob += word_logprob
+#                 logprob += lm.end(lm_state) if l == len(f) else 0.0
+#                 if k == lp:
+#                   new_lp = l
+#                 else:
+#                   new_lp = lp
+#                   new_following_d_bit = 
+#                 new_lp = l if k == lp else lp
+                
+#                 for m in xrange(k,l):
+
+#                 new_following_d_bit = 
+#                 new_hypothesis = hypothesis(logprob, lm_state, h, phrase, new_lp, )
+#                 if lm_state not in stacks[j] or stacks[j][lm_state].logprob < logprob: # second case is recombination
+#                   stacks[j][lm_state] = new_hypothesis
+
+# 0 0 0 1 1 0
+# lp = 3
+# d = 5
+# k = 4
+# l = 5
+# new_following_d_bit = h.following_d_bit[:]
+
+# left_start = 0
+# for a in range(0,len(f)+1):
+#   for b in range(a+1,len(f)+1):
+#     if '1' not in f[a:b]:
+
+#   if aa=='0':
